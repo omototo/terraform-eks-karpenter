@@ -2,6 +2,20 @@
 
 Configuration in this directory creates an AWS EKS cluster with [Karpenter](https://karpenter.sh/) provisioned for managing compute resource scaling. In the example provided, Karpenter is running on EKS Fargate yet Karpenter is providing compute in the form of EC2 instances.
 
+## Pre-requisites
+
+* [[Install Terraform](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)]
+* [[Have AWS cli configured](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html)]
+* Change your default region in variables.tf
+
+```bash
+variable "region" {
+  description = "Region"
+  type        = string
+  default     = "YOUR_REGION"
+}
+```
+
 ## Usage
 
 To run this example you need to execute:
@@ -23,6 +37,12 @@ kubectl scale deployment inflate --replicas 5
 
 # You can watch Karpenter's controller logs with
 kubectl logs -f -n karpenter -l app.kubernetes.io/name=karpenter -c controller
+
+# Install Nvidia device plugin
+$ kubectl create -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.14.0/nvidia-device-plugin.yml
+
+# Deploy GPU workload
+$ kubectl -f inflate_gpu.yaml apply
 ```
 
 You should see a new node named `karpenter.sh/provisioner-name/default` eventually come up in the console; this was provisioned by Karpenter in response to the scaled deployment above.
