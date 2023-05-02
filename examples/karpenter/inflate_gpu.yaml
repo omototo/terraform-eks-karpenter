@@ -1,0 +1,28 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: test-gpu
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      custom: gpu
+  template:
+    metadata:
+      labels:
+        custom: gpu
+    spec:
+      containers:
+      - name: gpu-container
+        image: tensorflow/tensorflow:latest-gpu
+        resources:
+          requests:
+            nvidia.com/gpu: 1
+          limits:
+            nvidia.com/gpu: 1
+      nodeSelector:
+        karpenter.sh/capacity-type: spot
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Exists"
+          effect: "NoSchedule"

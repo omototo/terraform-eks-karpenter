@@ -1,5 +1,5 @@
 provider "aws" {
-  region = local.region
+  region = var.region
 }
 
 provider "aws" {
@@ -34,7 +34,7 @@ provider "helm" {
 }
 
 provider "kubectl" {
-  apply_retry_count      = 5
+  apply_retry_count      = 7
   host                   = module.eks.cluster_endpoint
   cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
   load_config_file       = false
@@ -54,8 +54,8 @@ data "aws_ecrpublic_authorization_token" "token" {
 
 locals {
   name            = "ex-${replace(basename(path.cwd), "_", "-")}"
-  cluster_version = "1.24"
-  region          = "eu-west-1"
+  cluster_version = var.eks_version
+  region          = var.region
 
   vpc_cidr = "10.0.0.0/16"
   azs      = slice(data.aws_availability_zones.available.names, 0, 3)
@@ -79,6 +79,7 @@ module "eks" {
   cluster_endpoint_public_access = true
 
   cluster_addons = {
+    #aws-ebs-csi-driver = {}
     kube-proxy = {}
     vpc-cni    = {}
     coredns = {
@@ -176,7 +177,7 @@ resource "helm_release" "karpenter" {
   repository_username = data.aws_ecrpublic_authorization_token.token.user_name
   repository_password = data.aws_ecrpublic_authorization_token.token.password
   chart               = "karpenter"
-  version             = "v0.21.1"
+  version             = var.karpenter_version
 
   set {
     name  = "settings.aws.clusterName"
@@ -212,12 +213,22 @@ resource "kubectl_manifest" "karpenter_provisioner" {
       name: default
     spec:
       requirements:
+        - key: "karpenter.k8s.aws/instance-category"
+          operator: In
+          values: ["c", "m", "t"]
+        - key: "karpenter.k8s.aws/instance-cpu"
+          operator: In
+          values: ["2", "4", "8"]
+        - key: "kubernetes.io/arch"
+          operator: In
+          values: ["arm64", "amd64"]
         - key: karpenter.sh/capacity-type
           operator: In
-          values: ["spot"]
+          values: ["spot", "on-demand"]
       limits:
         resources:
-          cpu: 1000
+          cpu: 100
+          memory: 256Gi
       providerRef:
         name: default
       ttlSecondsAfterEmpty: 30
@@ -235,6 +246,8 @@ resource "kubectl_manifest" "karpenter_node_template" {
     metadata:
       name: default
     spec:
+      amiFamily: 
+        Bottlerocket
       subnetSelector:
         karpenter.sh/discovery: ${module.eks.cluster_name}
       securityGroupSelector:
@@ -243,10 +256,49 @@ resource "kubectl_manifest" "karpenter_node_template" {
         karpenter.sh/discovery: ${module.eks.cluster_name}
   YAML
 
+    depends_on = [
+    helm_release.karpenter
+  ]
+}
+
+
+resource "kubectl_manifest" "karpenter_provisioner_gpu" {
+  yaml_body = <<-YAML
+  apiVersion: karpenter.sh/v1alpha5
+  kind: Provisioner
+  metadata:
+    name: gpu
+  spec:
+    providerRef:
+      name: default
+    labels:
+      aws/node-type: gpu
+      aws/gpu-type: nvidia
+    requirements:
+      - key: karpenter.k8s.aws/instance-family
+        operator: In
+        values: ["p3", "g4dn", "g5", "p4", "p2", "g3"]
+      - key: karpenter.sh/capacity-type
+        operator: In
+        values: ["spot", "on-demand"]
+      - key: kubernetes.io/arch
+        operator: In
+        values: ["arm64", "amd64"]
+    taints:
+    - key: nvidia.com/gpu
+      effect: "NoSchedule"
+    limits:
+      resources:
+        cpu: 100
+        memory: 256Gi
+    ttlSecondsAfterEmpty: 30
+  YAML
+
   depends_on = [
     helm_release.karpenter
   ]
 }
+
 
 # Example deployment using the [pause image](https://www.ianlewis.org/en/almighty-pause-container)
 # and starts with zero replicas
@@ -272,7 +324,8 @@ resource "kubectl_manifest" "karpenter_example_deployment" {
               image: public.ecr.aws/eks-distro/kubernetes/pause:3.7
               resources:
                 requests:
-                  cpu: 1
+                  cpu: 0.25
+                  memory: 128Mi
   YAML
 
   depends_on = [
