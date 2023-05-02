@@ -39,6 +39,9 @@ kubectl scale deployment inflate --replicas 5
 kubectl logs -f -n karpenter -l app.kubernetes.io/name=karpenter -c controller
 
 # Install Nvidia device plugin
+https://github.com/NVIDIA/k8s-device-plugin
+
+# Enable GPU support in Kubernetes
 $ kubectl create -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.14.0/nvidia-device-plugin.yml
 
 # Deploy GPU workload
