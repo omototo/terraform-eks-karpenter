@@ -38,8 +38,16 @@ kubectl scale deployment inflate --replicas 5
 # You can watch Karpenter's controller logs with
 kubectl logs -f -n karpenter -l app.kubernetes.io/name=karpenter -c controller
 
+```
+
+You should see a new node named `karpenter.sh/provisioner-name/default` eventually come up in the console; this was provisioned by Karpenter in response to the scaled deployment above.
+
+Test GPU workloads
+
 # Install Nvidia device plugin
 https://github.com/NVIDIA/k8s-device-plugin
+
+```bash
 
 # Enable GPU support in Kubernetes
 $ kubectl create -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.14.0/nvidia-device-plugin.yml
@@ -47,8 +55,6 @@ $ kubectl create -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v
 # Deploy GPU workload
 $ kubectl -f inflate_gpu.yaml apply
 ```
-
-You should see a new node named `karpenter.sh/provisioner-name/default` eventually come up in the console; this was provisioned by Karpenter in response to the scaled deployment above.
 
 ### Tear Down & Clean-Up
 
