@@ -14,15 +14,9 @@ spec:
     spec:
       containers:
       - name: gpu-container
-        image: tensorflow/tensorflow:latest-gpu
+        image: public.ecr.aws/eks-distro/kubernetes/pause:3.7
         resources:
           requests:
             nvidia.com/gpu: 1
           limits:
             nvidia.com/gpu: 1
-      nodeSelector:
-        karpenter.sh/capacity-type: spot
-      tolerations:
-        - key: "nvidia.com/gpu"
-          operator: "Exists"
-          effect: "NoSchedule"

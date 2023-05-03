@@ -213,12 +213,15 @@ resource "kubectl_manifest" "karpenter_provisioner" {
       name: default
     spec:
       requirements:
-        - key: "karpenter.k8s.aws/instance-category"
+        - key: karpenter.k8s.aws/instance-category
           operator: In
-          values: ["c", "m", "t"]
-        - key: "karpenter.k8s.aws/instance-cpu"
-          operator: In
-          values: ["2", "4", "8"]
+          values:
+            - c
+            - m
+            - r
+            - p
+            - g
+            - t
         - key: "kubernetes.io/arch"
           operator: In
           values: ["arm64", "amd64"]
@@ -261,43 +264,6 @@ resource "kubectl_manifest" "karpenter_node_template" {
   ]
 }
 
-
-resource "kubectl_manifest" "karpenter_provisioner_gpu" {
-  yaml_body = <<-YAML
-  apiVersion: karpenter.sh/v1alpha5
-  kind: Provisioner
-  metadata:
-    name: gpu
-  spec:
-    providerRef:
-      name: default
-    labels:
-      aws/node-type: gpu
-      aws/gpu-type: nvidia
-    requirements:
-      - key: karpenter.k8s.aws/instance-family
-        operator: In
-        values: ["p3", "g4dn", "g5", "p4", "p2", "g3"]
-      - key: karpenter.sh/capacity-type
-        operator: In
-        values: ["spot", "on-demand"]
-      - key: kubernetes.io/arch
-        operator: In
-        values: ["arm64", "amd64"]
-    taints:
-    - key: nvidia.com/gpu
-      effect: "NoSchedule"
-    limits:
-      resources:
-        cpu: 100
-        memory: 256Gi
-    ttlSecondsAfterEmpty: 30
-  YAML
-
-  depends_on = [
-    helm_release.karpenter
-  ]
-}
 
 
 # Example deployment using the [pause image](https://www.ianlewis.org/en/almighty-pause-container)
