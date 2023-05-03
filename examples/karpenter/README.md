@@ -52,6 +52,11 @@ https://github.com/NVIDIA/k8s-device-plugin
 # Enable GPU support in Kubernetes
 $ kubectl create -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.14.0/nvidia-device-plugin.yml
 
+$ helm upgrade -i nvdp nvdp/nvidia-device-plugin \  
+  --namespace nvidia-device-plugin \
+  --create-namespace \
+  --version 0.14.0
+
 # Deploy GPU workload
 $ kubectl -f inflate_gpu.yaml apply
 ```
