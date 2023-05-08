@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: app-fargate
+  name: inflate-on-fargate
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inflate-on-fargate
+  template:
+    metadata:
+      labels:
+        app: inflate-on-fargate
+    spec:
+      terminationGracePeriodSeconds: 0
+      containers:
+        - name: inflate-on-fargate
+          image: public.ecr.aws/eks-distro/kubernetes/pause:3.7
+          resources:
+            requests:
+              cpu: 1

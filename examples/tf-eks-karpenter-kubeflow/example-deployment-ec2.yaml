@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inflate-on-ec2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inflate-on-ec2
+  template:
+    metadata:
+      labels:
+        app: inflate-on-ec2
+    spec:
+      terminationGracePeriodSeconds: 0
+      containers:
+        - name: inflate-on-ec2
+          image: public.ecr.aws/eks-distro/kubernetes/pause:3.7
+          resources:
+            requests:
+              cpu: 0.25
+              memory: 128Mi

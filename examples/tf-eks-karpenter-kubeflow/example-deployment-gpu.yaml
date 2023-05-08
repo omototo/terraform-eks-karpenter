@@ -1,0 +1,22 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: inflate-gpu
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      custom: inflate-gpu
+  template:
+    metadata:
+      labels:
+        custom: inflate-gpu
+    spec:
+      containers:
+      - name: inflate-gpu
+        image: public.ecr.aws/eks-distro/kubernetes/pause:3.7
+        resources:
+          requests:
+            nvidia.com/gpu: 1
+          limits:
+            nvidia.com/gpu: 1
